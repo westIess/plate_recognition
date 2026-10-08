@@ -17,15 +17,14 @@ PlateDetector::PlateDetector(const std::string& cascadePath) {
 }
 
 std::vector<cv::Rect> PlateDetector::detect(const cv::Mat& gray) const {
-    std::vector<cv::Rect> result;
-
+    // Keep contour boxes first: both the OCR budget and first-wins IoU
+    // suppression must prefer them over overlapping Haar boxes. A different
+    // box can make extractAndDeskew choose a different quadrilateral.
+    auto result = detectWithContours(gray);
     if (cascadeLoaded_) {
-        result = detectWithCascade(gray);
+        auto cascade = detectWithCascade(gray);
+        result.insert(result.end(), cascade.begin(), cascade.end());
     }
-
-    // Also try contours when Haar fires on an unrelated object.
-    auto contours = detectWithContours(gray);
-    result.insert(result.end(), contours.begin(), contours.end());
     std::vector<cv::Rect> unique;
     for (const auto& box : result) {
         bool duplicate = false;

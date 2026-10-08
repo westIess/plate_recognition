@@ -115,9 +115,12 @@ plate_recognizer INPUT_DIR [CASCADE.xml|-] [OUTPUT.csv]
 
 ## Пайплайн и правила OCR
 
-1. Grayscale → Haar, если доступен, и контуры Canny/morphology.
-   Контуры рассматриваются и при срабатывании Haar. Повторяющиеся боксы
-   удаляются по IoU > 0,65; геометрия оценивается по повёрнутому прямоугольнику.
+1. Grayscale → контуры Canny/morphology, затем Haar, если доступен.
+   Контурные кандидаты идут первыми и имеют приоритет при удалении дублей
+   по IoU > 0,65. Это сохраняет их боксы для выравнивания и места в лимите
+   OCR-кандидатов; геометрия оценивается по повёрнутому прямоугольнику.
+   Каскад всё равно запускается, если включён. Для ускорения отключите его
+   аргументом `-`; перестановка кандидатов сама по себе не ускоряет Haar.
 2. В окрестности бокса ищутся выпуклые четырёхугольники `approxPolyDP`.
    Учитываются площадь и пропорции; упорядоченные четыре угла передаются
    в `getPerspectiveTransform`/`warpPerspective`. Если надёжных углов нет,
@@ -222,3 +225,25 @@ ctest --test-dir build-core --output-on-failure
 - [MSYS2: OpenCV UCRT64](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-opencv)
 - [MSYS2: Tesseract UCRT64](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-tesseract-ocr)
 - [MSYS2: английская модель OCR](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-tesseract-data-eng)
+
+## Docker
+
+В контейнер копируются `src/`, `tests/`, `data/`, `test_images/` и
+`ground_truth.csv` из корня. При сборке выполняется CTest. По умолчанию
+контейнер обрабатывает комплект синтетики без каскада и запускает evaluate:
+
+```bash
+docker build -t plate-recognition .
+docker run --rm -v "${PWD}/output:/app/output" plate-recognition
+```
+
+Ручной запуск с каскадом (команды для Bash):
+
+```bash
+docker run --rm -v "${PWD}/output:/app/output" plate-recognition   sh -c './build/plate_recognizer test_images data/haarcascade_russian_plate_number.xml output/results.csv && ./build/evaluate output/results.csv ground_truth.csv output/errors.csv'
+```
+
+Для своих фото смонтируйте каталог в `/app/input` и передайте команду
+`./build/plate_recognizer input - output/results.csv` после имени образа.
+В Windows используйте абсолютный путь хоста в синтаксисе вашего терминала.
+Docker-сборка в среде подготовки архива не запускалась.

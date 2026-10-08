@@ -1,9 +1,10 @@
 #include "plate_detector.hpp"
 #include <algorithm>
 #include <iostream>
+#include <filesystem>
 #include <stdexcept>
 void check(bool ok,const char* message) {if(!ok) throw std::runtime_error(message);}
-int main() {
+int main(int argc, char** argv) {
     try {
         cv::Mat frame(200,500,CV_8UC3,cv::Scalar(0,0,0));
         std::array<cv::Point2f,4> q{{{50,50},{430,70},{410,155},{70,130}}};
@@ -34,6 +35,20 @@ int main() {
         PlateDetector detector("-");
         cv::Mat gray; cv::cvtColor(trapezoid,gray,cv::COLOR_BGR2GRAY);
         check(!detector.detect(gray).empty(),"contour-only detection");
+        // Regression: adding Haar must never replace or reorder the contour
+        // prefix, including when overlapping boxes are suppressed by IoU.
+        if (argc > 1) {
+            const std::filesystem::path root=argv[1];
+            PlateDetector combined((root/"data/haarcascade_russian_plate_number.xml").string());
+            for (const char* name : {"car1.jpg","car2.jpg","car3.jpg"}) {
+                auto input=cv::imread((root/"test_images"/name).string(),cv::IMREAD_GRAYSCALE);
+                check(!input.empty(),"regression image missing");
+                auto contours=detector.detect(input), merged=combined.detect(input);
+                check(!contours.empty(),"regression needs contour candidates");
+                check(merged.size()>=contours.size(),"Haar removed contour candidates");
+                check(std::equal(contours.begin(),contours.end(),merged.begin()),"Haar changed contour priority");
+            }
+        }
         std::cout << "geometry tests passed\n";return 0;
     } catch(const std::exception& e) {std::cerr << e.what() << '\n';return 1;}
 }

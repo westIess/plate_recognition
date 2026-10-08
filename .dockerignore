@@ -1,0 +1,8 @@
+build*/
+output/
+synthetic_images/
+real_images/
+.git/
+.vscode/
+__pycache__/
+*.zip
