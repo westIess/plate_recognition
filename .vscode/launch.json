@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Plate recognizer (GDB)", "type": "cppdbg", "request": "launch",
+      "program": "${workspaceFolder}/build/plate_recognizer",
+      "windows": {"program": "${workspaceFolder}/build/plate_recognizer.exe"},
+      "args": ["test_images", "data/haarcascade_russian_plate_number.xml", "output/results.csv", "--debug", "output/debug"],
+      "cwd": "${workspaceFolder}", "MIMode": "gdb", "preLaunchTask": "CMake build"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+build*/
+output/
+synthetic_images/
+real_images/
+__pycache__/

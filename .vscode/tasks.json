@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake configure", "type": "process", "command": "cmake",
+      "args": ["-S", ".", "-B", "build", "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Debug"],
+      "options": {"cwd": "${workspaceFolder}"}, "problemMatcher": []
+    },
+    {
+      "label": "CMake build", "type": "process", "command": "cmake",
+      "args": ["--build", "build", "--parallel"], "dependsOn": "CMake configure",
+      "options": {"cwd": "${workspaceFolder}"}, "problemMatcher": ["$gcc"],
+      "group": {"kind": "build", "isDefault": true}
+    },
+    {
+      "label": "CTest", "type": "process", "command": "ctest",
+      "args": ["--test-dir", "build", "--output-on-failure"], "dependsOn": "CMake build",
+      "options": {"cwd": "${workspaceFolder}"}, "problemMatcher": []
+    }
+  ]
+}
